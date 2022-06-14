@@ -1,15 +1,12 @@
-
 function auth(req, res, next) {
   if (req.session.username) {
-    next()
+    next();
   } else {
     res.json({
       code: 403,
-      msg: '请先登录后再访问'
-    })
+      msg: "请先登录后再访问",
+    });
   }
 }
 
-export {
-  auth
-}
+export { auth };
