@@ -1,15 +1,15 @@
+import "reflect-metadata";
+import { useExpressServer } from "routing-controllers";
+import { UserController } from "./controller/UserController";
+import { PORT } from "./config";
 import express from "express";
-import createError from "http-errors";
-import multer from "multer";
+import bodyParser from "body-parser";
 import session from "express-session";
 import cookieParser from "cookie-parser";
-import path from "path";
-import user from "./routes/user";
-import "./mongodb/db";
-import { SERVER_HOST, PORT } from "./config";
-
+import cors from 'cors';
 const app = express();
-
+app.use(cookieParser());
+app.use(cors())
 app.use(
   session({
     secret: "secret", // 对session id 相关的cookie 进行签名
@@ -20,52 +20,8 @@ app.use(
     },
   })
 );
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "./public/upload");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix =
-      Date.now() + file.originalname.slice(file.originalname.lastIndexOf("."));
-    cb(null, file.fieldname + uniqueSuffix);
-  },
-});
-const upload = multer({ storage });
-app.use(cookieParser());
-
-app.use(function (req, res, next) {
-  //设置跨域响应头
-  res.header("Access-Control-Allow-Origin", req.headers.origin);
-  res.header(
-    "Access-Control-Allow-Headers",
-    "token, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"
-  );
-  res.header("Access-Control-Allow-Methods", "PUT,POST,GET,DELETE,OPTIONS");
-  res.header("Access-control-Allow-Credentials", "true");
-  next();
-});
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use("/static", express.static(path.join(__dirname, "public/upload")));
-app.post("/upload", upload.single("userPhoto"), function (req: any, res: any) {
-  res.json({
-    url: `http://${SERVER_HOST}:${PORT}/static/${req.file.filename}`,
-  });
-});
-app.use("/user", user);
-app.use(function (req, res, next) {
-  next(createError(404));
-});
-
-// error handler
-app.use(function (err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get("env") === "development" ? err : {};
-
-  res.status(err.status || 500).send(res.locals.message);
-});
-
-app.listen(PORT);
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+useExpressServer(app, {
+  controllers: [UserController],
+}).listen(PORT);
